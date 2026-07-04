@@ -1,0 +1,75 @@
+:root {
+  color-scheme: dark;
+  --brand-primary: #5e8cff;
+  --brand-strong: #2866f7;
+  --brand-secondary: #a195f4;
+  --brand-highlight: #e7b8ff;
+  --status-success: #30d158;
+  --status-info: #0a84ff;
+  --status-warning: #ff9f0a;
+  --status-danger: #ff453a;
+  --status-neutral: #98989d;
+  --data-input: #0a84ff;
+  --data-cached: #8b6dff;
+  --data-output: #ff9f0a;
+  --text-primary: rgba(255, 255, 255, 0.94);
+  --text-secondary: rgba(235, 238, 245, 0.68);
+  --text-tertiary: rgba(235, 238, 245, 0.48);
+  --surface-window: rgba(16, 18, 24, 0.88);
+  --surface-section: rgba(255, 255, 255, 0.055);
+  --surface-card: rgba(255, 255, 255, 0.074);
+  --surface-elevated: rgba(255, 255, 255, 0.105);
+  --surface-track: rgba(255, 255, 255, 0.11);
+  --stroke-subtle: rgba(255, 255, 255, 0.105);
+  --shadow-window: 0 28px 90px rgba(0, 0, 0, 0.42);
+  --radius-window: 24px;
+  --radius-section: 14px;
+  --radius-card: 10px;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background: transparent;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --brand-primary: #2866f7;
+  --brand-strong: #1f59ed;
+  --brand-secondary: #8b6dff;
+  --brand-highlight: #daa3fa;
+  --text-primary: rgba(20, 24, 34, 0.94);
+  --text-secondary: rgba(40, 46, 60, 0.66);
+  --text-tertiary: rgba(40, 46, 60, 0.48);
+  --surface-window: rgba(245, 247, 252, 0.9);
+  --surface-section: rgba(255, 255, 255, 0.72);
+  --surface-card: rgba(255, 255, 255, 0.78);
+  --surface-elevated: rgba(255, 255, 255, 0.9);
+  --surface-track: rgba(23, 32, 54, 0.1);
+  --stroke-subtle: rgba(23, 32, 54, 0.09);
+  --shadow-window: 0 28px 90px rgba(24, 33, 52, 0.19);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --brand-primary: #2866f7;
+    --brand-strong: #1f59ed;
+    --brand-secondary: #8b6dff;
+    --brand-highlight: #daa3fa;
+    --text-primary: rgba(20, 24, 34, 0.94);
+    --text-secondary: rgba(40, 46, 60, 0.66);
+    --text-tertiary: rgba(40, 46, 60, 0.48);
+    --surface-window: rgba(245, 247, 252, 0.9);
+    --surface-section: rgba(255, 255, 255, 0.72);
+    --surface-card: rgba(255, 255, 255, 0.78);
+    --surface-elevated: rgba(255, 255, 255, 0.9);
+    --surface-track: rgba(23, 32, 54, 0.1);
+    --stroke-subtle: rgba(23, 32, 54, 0.09);
+    --shadow-window: 0 28px 90px rgba(24, 33, 52, 0.19);
+  }
+}
