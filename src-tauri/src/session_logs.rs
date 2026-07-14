@@ -24,6 +24,7 @@ struct SessionUsageDelta {
 
 #[derive(Debug, Default)]
 struct DetailedUsageAccumulator {
+    five_hour_local: PricedTokenUsage,
     today: PricedTokenUsage,
     seven_day: PricedTokenUsage,
     month: PricedTokenUsage,
@@ -44,6 +45,9 @@ impl DetailedUsageAccumulator {
         let price = model_token_price(model);
         let cost = estimated_cost_usd(tokens, &price);
         self.lifetime.add(tokens, cost);
+        if epoch_secs >= windows.five_hour_start {
+            self.five_hour_local.add(tokens, cost);
+        }
         if epoch_secs >= windows.month_start {
             self.month.add(tokens, cost);
         }
@@ -65,6 +69,7 @@ impl DetailedUsageAccumulator {
 
     fn into_usage(self) -> DetailedUsage {
         DetailedUsage {
+            five_hour_local: Some(self.five_hour_local),
             today: self.today,
             seven_day: self.seven_day,
             month: self.month,
@@ -77,6 +82,7 @@ impl DetailedUsageAccumulator {
 }
 
 struct TimeWindows {
+    five_hour_start: i64,
     day_start: i64,
     seven_day_start: i64,
     month_start: i64,
@@ -134,6 +140,7 @@ fn current_time_windows(value_period_start: Option<i64>) -> TimeWindows {
         .unwrap_or(now)
         .timestamp();
     TimeWindows {
+        five_hour_start: now.timestamp() - 5 * 60 * 60,
         day_start,
         seven_day_start,
         month_start,
@@ -222,6 +229,7 @@ mod tests {
             ..Default::default()
         };
         let windows = TimeWindows {
+            five_hour_start: 0,
             day_start: 0,
             seven_day_start: 0,
             month_start: 0,
@@ -243,5 +251,45 @@ mod tests {
         let usage = accumulator.into_usage();
 
         assert!((usage.value_period.unwrap().estimated_cost_usd - 6.2).abs() < 0.001);
+    }
+
+    #[test]
+    fn detailed_usage_tracks_a_rolling_local_five_hour_window() {
+        let mut accumulator = DetailedUsageAccumulator::default();
+        let windows = TimeWindows {
+            five_hour_start: 1_000,
+            day_start: 0,
+            seven_day_start: 0,
+            month_start: 0,
+            value_period_start: None,
+        };
+
+        accumulator.add(
+            TokenBreakdown {
+                total_tokens: 100,
+                ..Default::default()
+            },
+            999,
+            None,
+            &windows,
+        );
+        accumulator.add(
+            TokenBreakdown {
+                total_tokens: 250,
+                ..Default::default()
+            },
+            1_000,
+            None,
+            &windows,
+        );
+
+        let usage = accumulator.into_usage();
+        assert_eq!(
+            usage
+                .five_hour_local
+                .as_ref()
+                .map(|window| window.tokens.total_tokens),
+            Some(250)
+        );
     }
 }

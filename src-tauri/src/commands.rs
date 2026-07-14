@@ -6,13 +6,14 @@ use crate::{
         restore_codex_config_backup as restore_config_backup, sync_codex_config,
     },
     error::{AppError, AppResult},
+    knowledge_board::{self, KnowledgeBoard, KnowledgeOverview},
     local_db::read_task_board,
     models::{
         ApiSpeedMode, AppSettings, CodexAccessMode, CodexConfigBackup, DetectionPaths,
         ReasoningEffort, TaskBoard, UsageSnapshot,
     },
     paths::{app_log_dir, detect_codex_data_dir, detect_state_db},
-    settings::{detection_paths, read_settings, write_settings},
+    settings::{detection_paths, normalize_refresh_interval, read_settings, write_settings},
     skills_board::{get_skill_board as load_skill_board, SkillBoard},
     snapshot::load_usage_snapshot,
 };
@@ -75,6 +76,34 @@ pub async fn open_skill_folder(skill_id: String) -> AppResult<String> {
 }
 
 #[tauri::command]
+pub async fn get_knowledge_board() -> AppResult<KnowledgeBoard> {
+    tauri::async_runtime::spawn_blocking(knowledge_board::get_knowledge_board)
+        .await
+        .map_err(|err| AppError::Process(format!("后台读取知识库看板失败: {err}")))?
+}
+
+#[tauri::command]
+pub async fn get_knowledge_overview(document_id: String) -> AppResult<KnowledgeOverview> {
+    tauri::async_runtime::spawn_blocking(move || {
+        knowledge_board::get_knowledge_overview(&document_id)
+    })
+    .await
+    .map_err(|err| AppError::Process(format!("后台读取知识概述失败: {err}")))?
+}
+
+#[tauri::command]
+pub async fn set_knowledge_enabled(
+    document_id: String,
+    enabled: bool,
+) -> AppResult<KnowledgeBoard> {
+    tauri::async_runtime::spawn_blocking(move || {
+        knowledge_board::set_knowledge_enabled(&document_id, enabled)
+    })
+    .await
+    .map_err(|err| AppError::Process(format!("后台更新知识状态失败: {err}")))?
+}
+
+#[tauri::command]
 pub async fn get_app_settings() -> AppResult<AppSettings> {
     read_settings()
 }
@@ -88,7 +117,7 @@ pub async fn save_app_settings(settings: AppSettings) -> AppResult<AppSettings> 
 }
 
 fn normalize_settings_for_save(mut settings: AppSettings) -> AppSettings {
-    settings.refresh_interval_secs = settings.refresh_interval_secs.clamp(30, 3600);
+    settings.refresh_interval_secs = normalize_refresh_interval(settings.refresh_interval_secs);
     settings.codex_binary_path = normalize_optional_string(settings.codex_binary_path);
     settings.codex_data_dir = normalize_optional_string(settings.codex_data_dir);
     if settings.access_mode == CodexAccessMode::Official {
@@ -258,5 +287,20 @@ mod tests {
         assert_eq!(normalized.api_model, "gpt-5");
         assert_eq!(normalized.reasoning_effort, ReasoningEffort::Medium);
         assert_eq!(normalized.speed_mode, ApiSpeedMode::Balanced);
+    }
+
+    #[test]
+    fn refresh_interval_is_limited_to_two_hundred_through_three_hundred_seconds() {
+        let too_fast = normalize_settings_for_save(AppSettings {
+            refresh_interval_secs: 1,
+            ..AppSettings::default()
+        });
+        let too_slow = normalize_settings_for_save(AppSettings {
+            refresh_interval_secs: 3_600,
+            ..AppSettings::default()
+        });
+
+        assert_eq!(too_fast.refresh_interval_secs, 200);
+        assert_eq!(too_slow.refresh_interval_secs, 300);
     }
 }

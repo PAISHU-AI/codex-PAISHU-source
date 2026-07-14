@@ -26,6 +26,11 @@ export interface AccountInfo {
   emailPresent: boolean;
 }
 
+export interface AuthStatus {
+  isLoggedIn: boolean;
+  mode?: string | null;
+}
+
 export interface TokenBreakdown {
   inputTokens: number;
   cachedInputTokens: number;
@@ -40,6 +45,7 @@ export interface PricedTokenUsage {
 }
 
 export interface DetailedUsage {
+  fiveHourLocal?: PricedTokenUsage | null;
   today: PricedTokenUsage;
   sevenDay: PricedTokenUsage;
   month: PricedTokenUsage;
@@ -124,6 +130,7 @@ export interface DiagnosticItem {
 export interface UsageSnapshot {
   refreshedAt: number;
   account?: AccountInfo | null;
+  authStatus?: AuthStatus | null;
   limitId?: string | null;
   limitName?: string | null;
   primary?: RateWindow | null;

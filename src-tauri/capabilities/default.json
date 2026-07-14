@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default desktop capability for codex-paishu.",
+  "description": "Default desktop capability for paishu-agi.",
   "windows": ["main"],
   "permissions": [
     "core:default",

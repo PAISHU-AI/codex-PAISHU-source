@@ -3,7 +3,7 @@ use crate::{
     codex_process::read_app_server,
     local_db::{read_local_usage, read_task_board},
     models::{CodexAccessMode, DiagnosticItem, DiagnosticStatus, UsageSnapshot},
-    paths::{detect_codex_binary, detect_codex_data_dir, detect_state_db},
+    paths::{detect_codex_binary, detect_codex_data_dir, detect_state_db, read_codex_auth_status},
     settings::read_settings,
 };
 use chrono::{Datelike, Local, NaiveDate, TimeZone};
@@ -13,6 +13,7 @@ pub fn load_usage_snapshot() -> UsageSnapshot {
     let codex_binary = detect_codex_binary(&settings);
     let codex_dir = detect_codex_data_dir(&settings);
     let state_db = codex_dir.as_ref().and_then(|dir| detect_state_db(dir));
+    let auth_status = read_codex_auth_status(codex_dir.as_deref());
     let mut messages = Vec::new();
     let mut diagnostics = Vec::new();
 
@@ -27,6 +28,23 @@ pub fn load_usage_snapshot() -> UsageSnapshot {
             DiagnosticStatus::Ok
         } else {
             DiagnosticStatus::Error
+        },
+    });
+
+    diagnostics.push(DiagnosticItem {
+        id: "codex-login".to_string(),
+        title: "ChatGPT 登录状态".to_string(),
+        detail: if auth_status.is_logged_in {
+            "已检测到本机 ChatGPT 登录凭据".to_string()
+        } else if auth_status.mode.as_deref() == Some("apikey") {
+            "当前为 API Key 模式，不使用 ChatGPT 登录".to_string()
+        } else {
+            "未检测到可用的 ChatGPT 登录凭据".to_string()
+        },
+        status: if auth_status.is_logged_in {
+            DiagnosticStatus::Ok
+        } else {
+            DiagnosticStatus::Warning
         },
     });
 
@@ -88,7 +106,7 @@ pub fn load_usage_snapshot() -> UsageSnapshot {
         detail: if !use_official_account {
             "API 模式使用本地统计，已跳过官方 app-server".to_string()
         } else if app_server.primary.is_some() || app_server.account.is_some() {
-            "app-server 响应正常".to_string()
+            "通过 Codex CLI 子命令读取官方实时数据".to_string()
         } else {
             app_server
                 .messages
@@ -163,6 +181,7 @@ pub fn load_usage_snapshot() -> UsageSnapshot {
     UsageSnapshot {
         refreshed_at: Local::now().timestamp(),
         account: app_server.account,
+        auth_status,
         limit_id: app_server.limit_id,
         limit_name: app_server.limit_name,
         primary: app_server.primary,

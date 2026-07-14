@@ -16,6 +16,7 @@ use std::{
 };
 
 const APP_SERVER_TIMEOUT_SECS: u64 = 6;
+const SEVEN_DAY_WINDOW_MINS: i64 = 7 * 24 * 60;
 
 #[derive(Debug, Clone, Default)]
 pub struct AppServerSnapshot {
@@ -80,7 +81,7 @@ pub fn read_app_server(
             "id": 1,
             "method": "initialize",
             "params": {
-                "clientInfo": { "name": "codex-paishu", "title": "codex-PAISHU", "version": env!("CARGO_PKG_VERSION") },
+                "clientInfo": { "name": "paishu-agi", "title": "光核超级服务", "version": env!("CARGO_PKG_VERSION") },
                 "capabilities": { "experimentalApi": true, "optOutNotificationMethods": [] }
             }
         }),
@@ -112,7 +113,7 @@ pub fn read_app_server(
             )?;
             write_json_line(
                 &mut stdin,
-                json!({ "id": 3, "method": "account/rateLimits/read" }),
+                json!({ "id": 3, "method": "account/rateLimits/read", "params": null }),
             )?;
             write_json_line(
                 &mut stdin,
@@ -196,8 +197,18 @@ fn parse_rate_limits(result: &Value, snapshot: &mut AppServerSnapshot) {
         .get("limitName")
         .and_then(Value::as_str)
         .map(str::to_string);
-    snapshot.primary = parse_rate_window(limits.get("primary"));
-    snapshot.secondary = parse_rate_window(limits.get("secondary"));
+    // Older Codex responses used `primary` for the 5-hour window and
+    // `secondary` for the 7-day window. Current ChatGPT-bundled Codex can
+    // return its sole 7-day window as `primary`, so the field names are not
+    // stable enough to expose directly to the UI.
+    for (source, value) in [
+        ("primary", limits.get("primary")),
+        ("secondary", limits.get("secondary")),
+    ] {
+        if let Some(window) = parse_rate_window(value) {
+            assign_rate_window(snapshot, source, window);
+        }
+    }
 
     let reset_credits = result
         .pointer("/rateLimitResetCredits/availableCount")
@@ -223,6 +234,31 @@ fn parse_rate_limits(result: &Value, snapshot: &mut AppServerSnapshot) {
             balance: None,
             reset_credits,
         });
+    }
+}
+
+fn assign_rate_window(snapshot: &mut AppServerSnapshot, source: &str, window: RateWindow) {
+    match window.window_duration_mins {
+        Some(minutes) if minutes >= SEVEN_DAY_WINDOW_MINS => {
+            if snapshot.secondary.is_none() {
+                snapshot.secondary = Some(window);
+            }
+        }
+        Some(_) => {
+            if snapshot.primary.is_none() {
+                snapshot.primary = Some(window);
+            }
+        }
+        None if source == "secondary" && snapshot.secondary.is_none() => {
+            snapshot.secondary = Some(window);
+        }
+        None if snapshot.primary.is_none() => {
+            snapshot.primary = Some(window);
+        }
+        None if snapshot.secondary.is_none() => {
+            snapshot.secondary = Some(window);
+        }
+        None => {}
     }
 }
 
@@ -325,6 +361,7 @@ fn build_official_usage(
         daily_buckets,
         recent_daily_buckets,
         detailed_usage: DetailedUsage {
+            five_hour_local: None,
             today: priced_total_usage(today_tokens),
             seven_day: priced_total_usage(seven_day_tokens),
             month: priced_total_usage(month_tokens),
@@ -487,6 +524,74 @@ mod tests {
         assert_eq!(
             usage.value_period_source,
             ValuePeriodSource::MembershipStart
+        );
+    }
+
+    #[test]
+    fn rate_limits_classify_current_seven_day_primary_window() {
+        let result = json!({
+            "rateLimits": {
+                "limitId": "codex",
+                "primary": {
+                    "usedPercent": 2,
+                    "windowDurationMins": 10080,
+                    "resetsAt": 1784542018
+                },
+                "secondary": null
+            },
+            "rateLimitsByLimitId": {
+                "codex": {
+                    "limitId": "codex",
+                    "primary": {
+                        "usedPercent": 2,
+                        "windowDurationMins": 10080,
+                        "resetsAt": 1784542018
+                    },
+                    "secondary": null
+                }
+            }
+        });
+        let mut snapshot = AppServerSnapshot::default();
+
+        parse_rate_limits(&result, &mut snapshot);
+
+        assert!(snapshot.primary.is_none());
+        assert_eq!(
+            snapshot.secondary,
+            Some(RateWindow {
+                used_percent: 2.0,
+                window_duration_mins: Some(10080),
+                resets_at: Some(1784542018),
+            })
+        );
+    }
+
+    #[test]
+    fn rate_limits_keep_legacy_short_and_seven_day_windows() {
+        let result = json!({
+            "rateLimits": {
+                "limitId": "codex",
+                "primary": { "usedPercent": 25, "windowDurationMins": 300 },
+                "secondary": { "usedPercent": 40, "windowDurationMins": 10080 }
+            }
+        });
+        let mut snapshot = AppServerSnapshot::default();
+
+        parse_rate_limits(&result, &mut snapshot);
+
+        assert_eq!(
+            snapshot
+                .primary
+                .as_ref()
+                .and_then(|window| window.window_duration_mins),
+            Some(300)
+        );
+        assert_eq!(
+            snapshot
+                .secondary
+                .as_ref()
+                .and_then(|window| window.window_duration_mins),
+            Some(10080)
         );
     }
 }

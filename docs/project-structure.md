@@ -28,6 +28,9 @@
 - `src/App.tsx` - dashboard composition and settings drawer orchestration.
 - `src/components/` - dashboard panels, settings drawer, status card, tests.
 - `src/features/skills-board/` - isolated Skills board UI, feature-local IPC wrapper, types, styles, and component test.
+- `src/assets/paishu-agi-logo.png` - current 光核超级服务 in-app header logo; the filename remains stable for source compatibility.
+- `src-tauri/icons/source-icon.png` - authoritative 光核超级服务 desktop icon source; Tauri-generated platform icon derivatives stay beside it.
+- `docs/assets/` - current README screenshots for quota/dashboard, API relay, knowledge, and Skills views.
 - `src/lib/` - IPC wrappers, formatting helpers, mock fallback data.
 - `src/styles/` - design tokens and app CSS.
 - `src/types/usage.ts` - TypeScript mirror of Rust data contracts.

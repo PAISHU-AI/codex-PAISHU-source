@@ -321,12 +321,13 @@ export function SettingsDrawer({ settings, onClose, onSave }: SettingsDrawerProp
         刷新间隔（秒）
         <input
           type="number"
-          min={30}
-          max={3600}
+          min={200}
+          max={300}
           value={draft.refreshIntervalSecs}
-          onChange={(event) =>
-            setDraft({ ...draft, refreshIntervalSecs: Number(event.target.value) || 300 })
-          }
+          onChange={(event) => {
+            const value = Number(event.target.value) || 300;
+            setDraft({ ...draft, refreshIntervalSecs: Math.min(300, Math.max(200, value)) });
+          }}
         />
       </label>
 

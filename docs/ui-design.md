@@ -36,6 +36,7 @@ The first screen is the product. There is no landing page. The dashboard is opti
   - `TrendPanel`
 - `LoginStatusCard`
 - `SkillsBoard`
+- `KnowledgeBoard`
 - `EnvironmentPanel`
   - `ErrorDisclosure`
   - `SettingsDrawer`
@@ -45,6 +46,8 @@ The first screen is the product. There is no landing page. The dashboard is opti
 - `TokenValuePanel` shows the current membership-cycle value as `本期价值估算` with a single amount. It must not show a reference cap, remaining-to-cap amount, or progress bar.
 - The membership-cycle value uses the configured membership open date when available, with JSONL detailed token pricing preferred for amount accuracy.
 - Dashboard data source follows the selected access mode. Official native mode shows official account data and official daily usage buckets. API relay mode shows local SQLite/JSONL usage and hides official quota windows.
+- `QuotaPanel` displays only the 7-day official quota remaining percentage in official mode. It uses one gradient progress ring rather than a retired two-ring layout, plus a glass status card that groups available percentage, used percentage, reset time, and `7 天滚动窗口` provenance. The former 5-hour quota and local usage-share card are intentionally absent because current Codex no longer provides a 5-hour limit.
+- Settings allow a refresh interval only from 200 to 300 seconds; persisted values outside that range normalize into it.
 - If official usage is temporarily unavailable in official native mode, token value and trend cards show local usage fallback with a clear source label instead of rendering zero-value statistics. If only the official current-day bucket is missing or zero, the today card and today's trend bar use local real-time usage and label the source as a local supplement.
 - `TrendPanel` occupies the left side of the second row at desktop widths.
 - `LoginStatusCard` occupies the right side of the 7-day trend row and summarizes official native login vs API relay mode, endpoint, model, reasoning effort, and speed.
@@ -55,10 +58,15 @@ The first screen is the product. There is no landing page. The dashboard is opti
 - API relay mode shows API address, API Key, model name, reasoning effort, and speed strategy. The API address input accepts a base URL and normalizes it to exactly one trailing `/v1` when edited or saved. API Key is a password input; it is used for Codex `auth.json` sync and is not read back into the UI. API relay dashboard statistics are local because some users work without official login.
 - The settings drawer save button must persist settings, close the drawer on success, and keep the drawer open with an inline error on failure. The drawer must not show a log button.
 - The borderless title bar includes icon-only refresh, settings, minimize, and close controls.
+- The header brand mark renders the dedicated `src/assets/paishu-agi-logo.png` image next to the visible product name `光核超级服务`, rather than a text placeholder.
+- The window surface is fully opaque in active, idle, and unfocused states. Card-level translucent surfaces remain visual hierarchy only and never reveal other windows behind the application.
+- On macOS, minimize sends the window to Dock. Close hides it to the top menu bar instead of quitting; the tray menu provides display, Dock minimize, menu-bar hide, topmost, and explicit quit actions.
 - The visible full-width board under the trend/login row is the Skills board, not the old task board. It is implemented under `src/features/skills-board/`, uses a left skill list and right description pane, and all text/actions remain Chinese.
 - Skills board shows only skill names, source/status, paths, and descriptions. It must not render full `SKILL.md` bodies. Delete/disable actions are disabled for system, plugin, protected, and already-disabled skills.
 - Skills board search area includes status filters: `全部`, `已启用`, and `已禁用`. Disabled skills from `.codex/skills-disabled` must appear under `已禁用`, expose an enable action, and return to the enabled list after enabling. Disable and enable actions are reversible and run without a blocking browser confirmation dialog. Disabling keeps the current filter in place. Skill state buttons use green for currently enabled skills and red for currently disabled skills so mixed lists are easy to scan.
 - Skills board header includes a Google Translate toggle left of refresh. `翻译` translates the selected skill description to Chinese; `取消翻译` restores the original description without changing files.
+- Knowledge Board is a full-width operational panel above Skills. Its first scan row shows service health, knowledge count, vector chunks, PostgreSQL capacity, average read latency, successful reads, and failed reads. The inventory supports search plus all/enabled/disabled filters; selecting an item reveals chunks, token estimate, access tier, source, owner, and update time. Green/red state actions enable or disable retrieval without deleting knowledge.
+- The selected knowledge detail includes a scroll-bounded real-content overview with source-language label, loading/error states, and a Google translate/cancel-translation control. Translation never writes back to the knowledge service.
 - Settings dropdown options must stay readable in dark and light themes; native option backgrounds should not become white text on white background.
 - Reasoning/speed controls must show their current effective scope. Relay mode save synchronizes model, endpoint, reasoning, and speed to Codex config.
 

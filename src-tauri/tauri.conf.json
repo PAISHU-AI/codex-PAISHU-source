@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "codex-PAISHU",
+  "productName": "光核超级服务",
   "version": "1.5.0",
-  "identifier": "com.paishu.codex",
+  "identifier": "com.paishu.agi",
   "build": {
     "beforeDevCommand": "npm run dev:frontend",
     "devUrl": "http://127.0.0.1:1420",
@@ -10,11 +10,10 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
-        "title": "codex-PAISHU",
+        "title": "光核超级服务",
         "width": 930,
         "height": 760,
         "minWidth": 760,
@@ -22,7 +21,7 @@
         "center": true,
         "resizable": true,
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
         "shadow": true
       }
     ],

@@ -15,7 +15,7 @@
   --text-primary: rgba(255, 255, 255, 0.94);
   --text-secondary: rgba(235, 238, 245, 0.68);
   --text-tertiary: rgba(235, 238, 245, 0.48);
-  --surface-window: rgba(16, 18, 24, 0.88);
+  --surface-window: #101218;
   --surface-section: rgba(255, 255, 255, 0.055);
   --surface-card: rgba(255, 255, 255, 0.074);
   --surface-elevated: rgba(255, 255, 255, 0.105);
@@ -33,7 +33,7 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: transparent;
+  background: var(--surface-window);
 }
 
 :root[data-theme="light"] {
@@ -45,7 +45,7 @@
   --text-primary: rgba(20, 24, 34, 0.94);
   --text-secondary: rgba(40, 46, 60, 0.66);
   --text-tertiary: rgba(40, 46, 60, 0.48);
-  --surface-window: rgba(245, 247, 252, 0.9);
+  --surface-window: #f5f7fc;
   --surface-section: rgba(255, 255, 255, 0.72);
   --surface-card: rgba(255, 255, 255, 0.78);
   --surface-elevated: rgba(255, 255, 255, 0.9);
@@ -64,7 +64,7 @@
     --text-primary: rgba(20, 24, 34, 0.94);
     --text-secondary: rgba(40, 46, 60, 0.66);
     --text-tertiary: rgba(40, 46, 60, 0.48);
-    --surface-window: rgba(245, 247, 252, 0.9);
+    --surface-window: #f5f7fc;
     --surface-section: rgba(255, 255, 255, 0.72);
     --surface-card: rgba(255, 255, 255, 0.78);
     --surface-elevated: rgba(255, 255, 255, 0.9);

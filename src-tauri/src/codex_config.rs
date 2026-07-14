@@ -12,7 +12,7 @@ use std::{
 };
 use toml_edit::{value, DocumentMut, Item, Table};
 
-const RELAY_PROVIDER_ID: &str = "paishu_relay";
+const RELAY_PROVIDER_ID: &str = "paishu_agi_relay";
 const OFFICIAL_MODEL: &str = "gpt-5.5";
 const DEFAULT_BACKUP_ID: &str = "default-initial";
 const DEFAULT_BACKUP_LABEL: &str = "首次启动默认配置";
@@ -308,7 +308,7 @@ fn ensure_restore_snapshot(
     restore_path: &Path,
     current_text: &str,
 ) -> AppResult<()> {
-    if restore_path.exists() || !config_path.exists() || is_paishu_managed(current_text) {
+    if restore_path.exists() || !config_path.exists() || is_paishu_agi_managed(current_text) {
         return Ok(());
     }
     if let Some(parent) = restore_path.parent() {
@@ -382,7 +382,7 @@ fn backup_existing_file(path: &Path, base_name: &str) -> AppResult<()> {
         return Ok(());
     }
     let timestamp = Local::now().format("%Y%m%d%H%M%S%3f");
-    let backup_name = format!("{base_name}.paishu-backup-{timestamp}");
+    let backup_name = format!("{base_name}.paishu-agi-backup-{timestamp}");
     let backup_path = path.with_file_name(backup_name);
     fs::copy(path, backup_path)?;
     Ok(())
@@ -470,7 +470,7 @@ fn reasoning_effort_value(effort: &ReasoningEffort) -> &'static str {
     }
 }
 
-fn is_paishu_managed(text: &str) -> bool {
+fn is_paishu_agi_managed(text: &str) -> bool {
     if let Ok(doc) = text.parse::<DocumentMut>() {
         let root = doc.as_table();
         if root
@@ -490,8 +490,8 @@ fn is_paishu_managed(text: &str) -> bool {
             return true;
         }
     }
-    text.contains("model_provider = \"paishu_relay\"")
-        || text.contains("[model_providers.paishu_relay]")
+    text.contains("model_provider = \"paishu_agi_relay\"")
+        || text.contains("[model_providers.paishu_agi_relay]")
 }
 
 #[cfg(test)]
@@ -524,11 +524,11 @@ preferred_auth_method = "chatgpt"
 
         let text = fs::read_to_string(&config_path).unwrap();
         assert!(text.contains(r#"model = "gpt-5.4""#));
-        assert!(text.contains(r#"model_provider = "paishu_relay""#));
+        assert!(text.contains(r#"model_provider = "paishu_agi_relay""#));
         assert!(text.contains(r#"preferred_auth_method = "apikey""#));
         assert!(text.contains(r#"model_reasoning_effort = "xhigh""#));
         assert!(text.contains(r#"service_tier = "priority""#));
-        assert!(text.contains(r#"[model_providers.paishu_relay]"#));
+        assert!(text.contains(r#"[model_providers.paishu_agi_relay]"#));
         assert!(text.contains(r#"base_url = "https://api.example.com/v1""#));
         assert!(text.contains(r#"wire_api = "responses""#));
 
@@ -541,7 +541,7 @@ preferred_auth_method = "chatgpt"
             .unwrap()
             .file_name()
             .to_string_lossy()
-            .contains("paishu-backup")));
+            .contains("paishu-agi-backup")));
     }
 
     #[test]
@@ -553,13 +553,13 @@ preferred_auth_method = "chatgpt"
         fs::write(
             &config_path,
             r#"model = "relay-model"
-model_provider = "paishu_relay"
+model_provider = "paishu_agi_relay"
 preferred_auth_method = "apikey"
 model_reasoning_effort = "xhigh"
 service_tier = "priority"
 
-[model_providers.paishu_relay]
-name = "paishu_relay"
+[model_providers.paishu_agi_relay]
+name = "paishu_agi_relay"
 base_url = "https://api.example.com/v1"
 wire_api = "responses"
 
@@ -604,7 +604,7 @@ command = "stale"
         assert!(text.contains(r#"trust_level = "trusted""#));
         assert!(!text.contains("stale_restore"));
         assert!(!text.contains("service_tier"));
-        assert!(!text.contains("paishu_relay"));
+        assert!(!text.contains("paishu_agi_relay"));
         assert!(!text.contains("model_provider"));
         let auth = fs::read_to_string(&auth_path).unwrap();
         assert!(auth.contains(r#""auth_mode": "chatgpt""#));
@@ -731,7 +731,7 @@ service_tier = "priority"
             .unwrap()
             .file_name()
             .to_string_lossy()
-            .contains("paishu-backup")));
+            .contains("paishu-agi-backup")));
     }
 
     #[test]
@@ -741,10 +741,10 @@ service_tier = "priority"
     }
 
     #[test]
-    fn paishu_detection_handles_toml_quoting_variants() {
-        assert!(is_paishu_managed("model_provider = 'paishu_relay'"));
-        assert!(is_paishu_managed(
-            "[model_providers.paishu_relay]\nbase_url = 'https://api.example.com/v1'"
+    fn paishu_agi_detection_handles_toml_quoting_variants() {
+        assert!(is_paishu_agi_managed("model_provider = 'paishu_agi_relay'"));
+        assert!(is_paishu_agi_managed(
+            "[model_providers.paishu_agi_relay]\nbase_url = 'https://api.example.com/v1'"
         ));
     }
 }

@@ -1,13 +1,13 @@
 [package]
-name = "codex-paishu"
+name = "paishu-agi"
 version = "1.5.0"
 description = "Cross-platform Codex quota and usage desktop dashboard"
-authors = ["PAISHU"]
+authors = ["光核超级服务"]
 edition = "2021"
 rust-version = "1.78"
 
 [lib]
-name = "codex_paishu_lib"
+name = "paishu_agi_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -19,7 +19,7 @@ dirs = "6"
 rusqlite = { version = "0.32", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-api"] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-global-shortcut = "2"
 thiserror = "2"
 toml = "0.9"

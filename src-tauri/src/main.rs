@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    codex_paishu_lib::run();
+    paishu_agi_lib::run();
 }

@@ -39,6 +39,7 @@ export const defaultSettings: AppSettings = {
 export const mockSnapshot: UsageSnapshot = {
   refreshedAt: now,
   account: { accountType: "chatgpt", planType: "Pro", emailPresent: true },
+  authStatus: { isLoggedIn: true, mode: "chatgpt" },
   limitId: "codex",
   limitName: "Codex",
   primary: { usedPercent: 37, windowDurationMins: 300, resetsAt: now + 7200 },
@@ -185,8 +186,8 @@ export const mockSnapshot: UsageSnapshot = {
           {
             id: "a1",
             code: "COD-A921",
-            title: "重构 codex-PAISHU 桌面工作台",
-            detail: "codex-PAISHU · 880万",
+            title: "重构光核超级服务桌面工作台",
+            detail: "光核超级服务 · 880万",
             chip: "高耗",
             updatedAt: now - 300,
             tokens: 8_800_000,

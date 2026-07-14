@@ -342,25 +342,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "codex-paishu"
-version = "1.5.0"
-dependencies = [
- "chrono",
- "dirs",
- "rusqlite",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-global-shortcut",
- "tempfile",
- "thiserror 2.0.18",
- "toml 0.9.12+spec-1.1.0",
- "toml_edit 0.25.12+spec-1.1.0",
- "which",
-]
-
-[[package]]
 name = "combine"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2174,6 +2155,25 @@ name = "option-ext"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
+
+[[package]]
+name = "paishu-agi"
+version = "1.5.0"
+dependencies = [
+ "chrono",
+ "dirs",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-global-shortcut",
+ "tempfile",
+ "thiserror 2.0.18",
+ "toml 0.9.12+spec-1.1.0",
+ "toml_edit 0.25.12+spec-1.1.0",
+ "which",
+]
 
 [[package]]
 name = "pango"

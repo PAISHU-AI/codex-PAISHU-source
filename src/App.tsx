@@ -13,6 +13,7 @@ import { TokenValuePanel } from "./components/TokenValuePanel";
 import { TrendDetailDialog } from "./components/TrendDetailDialog";
 import { TrendPanel } from "./components/TrendPanel";
 import { SkillsBoard } from "./features/skills-board/SkillsBoard";
+import { KnowledgeBoard } from "./features/knowledge-board/KnowledgeBoard";
 
 export function App() {
   const [snapshot, setSnapshot] = useState<UsageSnapshot | null>(null);
@@ -92,6 +93,7 @@ export function App() {
           onOpenDetail={() => setTrendDetailOpen(true)}
         />
         <LoginStatusCard snapshot={snapshot} settings={settings} />
+        <KnowledgeBoard />
         <SkillsBoard enabled={settings.showTaskBoard} />
         <EnvironmentPanel diagnostics={snapshot?.diagnostics ?? []} isPartial={hasPartialData} />
       </section>

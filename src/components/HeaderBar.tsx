@@ -2,6 +2,7 @@ import { Minus, RefreshCw, Settings, ShieldCheck, X } from "lucide-react";
 import type { PointerEvent } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { formatTime } from "../lib/format";
+import appLogo from "../assets/paishu-agi-logo.png";
 import type { UsageSnapshot } from "../types/usage";
 
 interface HeaderBarProps {
@@ -17,10 +18,10 @@ export function HeaderBar({ snapshot, isRefreshing, onRefresh, onOpenSettings }:
     <header className="header-bar" data-tauri-drag-region onPointerDown={startDragFromHeader}>
       <div className="brand-lockup">
         <div className="brand-mark" aria-hidden="true">
-          P
+          <img src={appLogo} alt="" draggable={false} />
         </div>
         <div>
-          <h1>codex-PAISHU</h1>
+          <h1>光核超级服务</h1>
           <p>Codex 额度、令牌与任务遥测</p>
         </div>
       </div>
@@ -48,7 +49,8 @@ export function HeaderBar({ snapshot, isRefreshing, onRefresh, onOpenSettings }:
           <button
             className="icon-button window-control close"
             onClick={closeWindow}
-            aria-label="关闭窗口"
+            title="隐藏到顶部菜单栏"
+            aria-label="隐藏到顶部菜单栏"
           >
             <X size={15} />
           </button>

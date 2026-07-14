@@ -22,9 +22,11 @@
 
 - `docs/maintenance/development-log.md` - reusable development decisions and verification notes.
 - `docs/maintenance/debug-reports/2026-07-03-refresh-settings-membership-cycle.md` - refresh speed, settings save, and membership-cycle value bugfix.
+- `docs/maintenance/debug-reports/2026-07-13-chatgpt-bundled-codex-runtime.md` - ChatGPT-bundled Codex CLI discovery, app-server schema, login-state fallback, and 7-day quota-window field migration.
 
 ## Public Assets
 
 - `docs/assets/dashboard-overview.png` - README dashboard screenshot.
+- `docs/assets/knowledge-board.png` - README vector knowledge dashboard screenshot.
 - `docs/assets/settings-api-switch.png` - README settings and API relay switch screenshot.
 - `docs/assets/skills-board.png` - README Skills board screenshot.

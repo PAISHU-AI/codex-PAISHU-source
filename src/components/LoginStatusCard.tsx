@@ -9,7 +9,7 @@ interface LoginStatusCardProps {
 
 export function LoginStatusCard({ snapshot, settings }: LoginStatusCardProps) {
   const isRelay = settings.accessMode === "relay";
-  const accountReady = Boolean(snapshot?.account?.emailPresent);
+  const accountReady = Boolean(snapshot?.account?.emailPresent || snapshot?.authStatus?.isLoggedIn);
   const relayReady = Boolean(settings.apiEndpoint?.trim());
   const statusTone = isRelay
     ? relayReady
@@ -24,7 +24,9 @@ export function LoginStatusCard({ snapshot, settings }: LoginStatusCardProps) {
       ? "中转端点已配置，本地统计已启用"
       : "需要配置 API 端点"
     : accountReady
-      ? `${snapshot?.account?.planType ?? "Codex"} 账户可用`
+      ? snapshot?.account?.planType
+        ? `${snapshot.account.planType} 账户可用`
+        : "已检测到本机 ChatGPT 登录凭据"
       : "未读取到官方账户状态";
   const effectiveState = isRelay ? "API 模式使用本地 SQLite/JSONL 统计" : "官方监控已生效";
 

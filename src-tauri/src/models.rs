@@ -25,6 +25,13 @@ pub struct AccountInfo {
     pub email_present: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthStatus {
+    pub is_logged_in: bool,
+    pub mode: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalThread {
@@ -119,6 +126,7 @@ impl PricedTokenUsage {
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DetailedUsage {
+    pub five_hour_local: Option<PricedTokenUsage>,
     pub today: PricedTokenUsage,
     pub seven_day: PricedTokenUsage,
     pub month: PricedTokenUsage,
@@ -240,6 +248,7 @@ impl Default for DiagnosticStatus {
 pub struct UsageSnapshot {
     pub refreshed_at: i64,
     pub account: Option<AccountInfo>,
+    pub auth_status: AuthStatus,
     pub limit_id: Option<String>,
     pub limit_name: Option<String>,
     pub primary: Option<RateWindow>,

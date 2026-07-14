@@ -3,6 +3,7 @@ mod codex_config;
 mod codex_process;
 mod commands;
 mod error;
+mod knowledge_board;
 mod local_db;
 mod models;
 mod paths;
@@ -14,9 +15,10 @@ mod snapshot;
 
 use commands::{
     archive_skill, create_codex_config_backup, delete_codex_config_backup, disable_skill,
-    enable_skill, get_app_settings, get_detection_paths, get_skill_board, get_usage_snapshot,
-    list_codex_config_backups, open_log_folder, open_skill_folder, refresh_task_board,
-    restore_codex_config_backup, save_app_settings, set_always_on_top,
+    enable_skill, get_app_settings, get_detection_paths, get_knowledge_board,
+    get_knowledge_overview, get_skill_board, get_usage_snapshot, list_codex_config_backups,
+    open_log_folder, open_skill_folder, refresh_task_board, restore_codex_config_backup,
+    save_app_settings, set_always_on_top, set_knowledge_enabled,
 };
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
@@ -25,7 +27,7 @@ use tauri::{
 };
 
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
@@ -52,8 +54,20 @@ pub fn run() {
             disable_skill,
             enable_skill,
             archive_skill,
-            open_skill_folder
+            open_skill_folder,
+            get_knowledge_board,
+            get_knowledge_overview,
+            set_knowledge_enabled
         ])
+        .on_window_event(|window, event| {
+            if window.label() != "main" {
+                return;
+            }
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .setup(|app| {
             if let Err(err) = crate::codex_config::ensure_default_codex_config_backup() {
                 eprintln!("保存 Codex 默认配置备份失败: {err}");
@@ -62,23 +76,39 @@ pub fn run() {
             setup_shortcut(app)?;
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("运行 codex-paishu 时出错");
+        .build(tauri::generate_context!())
+        .expect("构建 paishu-agi 运行时失败");
+
+    app.run(|app_handle, event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Reopen { .. } = event {
+            restore_main_window(app_handle);
+        }
+    });
 }
 
 fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
-    let toggle = MenuItemBuilder::with_id("toggle", "显示 / 隐藏").build(app)?;
+    let show = MenuItemBuilder::with_id("show", "显示主窗口").build(app)?;
+    let minimize_label = if cfg!(target_os = "macos") {
+        "最小化到 Dock"
+    } else {
+        "最小化窗口"
+    };
+    let minimize = MenuItemBuilder::with_id("minimize", minimize_label).build(app)?;
+    let hide = MenuItemBuilder::with_id("hide", "隐藏到顶部菜单栏").build(app)?;
     let topmost = MenuItemBuilder::with_id("topmost", "切换窗口置顶").build(app)?;
     let quit = MenuItemBuilder::with_id("quit", "退出").build(app)?;
     let menu = MenuBuilder::new(app)
-        .items(&[&toggle, &topmost, &quit])
+        .items(&[&show, &minimize, &hide, &topmost, &quit])
         .build()?;
 
     let mut builder = TrayIconBuilder::new()
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
-            "toggle" => toggle_main_window(app),
+            "show" => restore_main_window(app),
+            "minimize" => minimize_main_window(app),
+            "hide" => hide_main_window(app),
             "topmost" => toggle_always_on_top(app),
             "quit" => app.exit(0),
             _ => {}
@@ -118,16 +148,55 @@ fn main_window(app: &tauri::AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window("main")
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum WindowToggleAction {
+    Restore,
+    HideToMenuBar,
+}
+
+fn next_window_toggle_action(is_visible: bool, is_minimized: bool) -> WindowToggleAction {
+    if !is_visible || is_minimized {
+        WindowToggleAction::Restore
+    } else {
+        WindowToggleAction::HideToMenuBar
+    }
+}
+
 fn toggle_main_window(app: &tauri::AppHandle) {
     if let Some(window) = main_window(app) {
         let is_visible = window.is_visible().unwrap_or(false);
-        if is_visible {
-            let _ = window.hide();
-        } else {
-            let _ = window.show();
-            let _ = window.unminimize();
-            let _ = window.set_focus();
+        let is_minimized = window.is_minimized().unwrap_or(false);
+        match next_window_toggle_action(is_visible, is_minimized) {
+            WindowToggleAction::Restore => restore_window(&window),
+            WindowToggleAction::HideToMenuBar => {
+                let _ = window.hide();
+            }
         }
+    }
+}
+
+fn restore_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = main_window(app) {
+        restore_window(&window);
+    }
+}
+
+fn restore_window(window: &WebviewWindow) {
+    let _ = window.show();
+    let _ = window.unminimize();
+    let _ = window.set_focus();
+}
+
+fn minimize_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = main_window(app) {
+        let _ = window.show();
+        let _ = window.minimize();
+    }
+}
+
+fn hide_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = main_window(app) {
+        let _ = window.hide();
     }
 }
 
@@ -135,5 +204,26 @@ fn toggle_always_on_top(app: &tauri::AppHandle) {
     if let Some(window) = main_window(app) {
         let next = !window.is_always_on_top().unwrap_or(false);
         let _ = window.set_always_on_top(next);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tray_toggle_restores_hidden_or_minimized_windows_and_hides_visible_windows() {
+        assert_eq!(
+            next_window_toggle_action(false, false),
+            WindowToggleAction::Restore
+        );
+        assert_eq!(
+            next_window_toggle_action(true, true),
+            WindowToggleAction::Restore
+        );
+        assert_eq!(
+            next_window_toggle_action(true, false),
+            WindowToggleAction::HideToMenuBar
+        );
     }
 }

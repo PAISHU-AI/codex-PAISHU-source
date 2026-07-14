@@ -63,6 +63,14 @@ describe("SettingsDrawer", () => {
     expect(screen.queryByRole("button", { name: "日志" })).not.toBeInTheDocument();
   });
 
+  it("limits the refresh interval setting to 200 through 300 seconds", () => {
+    render(<SettingsDrawer settings={defaultSettings} onClose={() => {}} onSave={() => {}} />);
+
+    const refreshInterval = screen.getByLabelText("刷新间隔（秒）") as HTMLInputElement;
+    expect(refreshInterval).toHaveAttribute("min", "200");
+    expect(refreshInterval).toHaveAttribute("max", "300");
+  });
+
   it("shows config backup controls above access mode", async () => {
     render(<SettingsDrawer settings={defaultSettings} onClose={() => {}} onSave={() => {}} />);
 

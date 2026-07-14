@@ -1,12 +1,12 @@
-# codex-PAISHU
+# 光核超级服务
 
 [English](#english) | [中文](#中文)
 
-![codex-PAISHU dashboard](docs/assets/dashboard-overview.png)
+![光核超级服务 dashboard](docs/assets/dashboard-overview.png)
 
 ## 中文
 
-`codex-PAISHU` 是一个开源的跨平台 Codex 桌面仪表盘，用于查看本机 Codex / ChatGPT Codex 的额度窗口、令牌用量、价值估算、登录状态、Skills 技能看板和运行环境诊断。
+`光核超级服务` 是一个开源的跨平台 Codex 桌面仪表盘，用于查看本机 Codex / ChatGPT Codex 的额度窗口、令牌用量、价值估算、登录状态、向量知识库、Skills 技能看板和运行环境诊断。
 
 它同时支持官方原生登录和第三方 API / API 中转模式。你可以在设置里一键切换接入方式，自动写入 Codex `config.toml` 与 `auth.json`，并通过内置备份功能恢复到首次启动时的默认配置。
 
@@ -14,12 +14,14 @@
 
 ### 核心功能
 
-- **额度窗口监控**：展示 5 小时 / 7 天滚动额度窗口和重置时间。
+- **额度窗口监控**：展示官方 7 天滚动额度剩余比例和重置时间。
 - **令牌价值估算**：按官方 API 价格估算今日、近 7 天、累计和当前会员周期价值。
 - **官方原生 / 第三方 API 一键切换**：在设置页选择 `官方原生` 或 `API 中转`，自动同步 Codex 配置。
 - **API 中转配置**：支持 API 地址、API Key、模型名、推理强度、速度策略。
 - **配置备份与恢复**：首次启动自动保存默认配置；可手动保存、恢复、删除非默认备份。
 - **Skills 技能看板**：浏览本机 Codex Skills，支持搜索、翻译描述、启用 / 禁用 / 归档用户技能。
+- **知识库可视化**：连接本机 PAISHU PostgreSQL + pgvector 服务，展示容量、知识清单、向量分块、读取时长、成功/失败次数，支持安全启用或禁用知识、真实正文概述与临时中文翻译。
+- **Dock 与顶部菜单栏**：macOS 可最小化到 Dock，关闭窗口则隐藏到顶部菜单栏；窗口闲置或失焦时保持完全不透明。
 - **环境诊断**：检查 Codex CLI、数据目录、SQLite state、app-server、会话日志解析状态。
 - **本地优先**：SQLite、JSONL、配置同步等敏感操作都在本机 Rust 侧完成。
 - **跨平台桌面**：Tauri 2 + React + Rust，面向 Windows 和 macOS。
@@ -32,15 +34,15 @@
 
 保存后会同步：
 
-- `model_provider = "paishu_relay"`
-- `[model_providers.paishu_relay]`
+- `model_provider = "paishu_agi_relay"`
+- `[model_providers.paishu_agi_relay]`
 - `base_url`
 - `wire_api = "responses"`
 - `preferred_auth_method = "apikey"`
 - 模型、推理强度、速度策略
 - `auth.json` 中的 `auth_mode` 与 `OPENAI_API_KEY`
 
-切回官方原生模式时，会移除PAISHU中转 provider 形态并恢复 ChatGPT 官方登录配置，同时保留项目路径、MCP servers、trust records 等无关配置段。
+切回官方原生模式时，会移除光核超级服务中转 provider 形态并恢复 ChatGPT 官方登录配置，同时保留项目路径、MCP servers、trust records 等无关配置段。
 
 ### 配置备份
 
@@ -57,6 +59,12 @@
 ![skills board](docs/assets/skills-board.png)
 
 技能看板只读取 bounded metadata，不把完整 `SKILL.md` 内容发送到前端。系统技能、插件缓存技能、受保护技能默认为只读；用户技能可以启用、禁用或归档。
+
+### 知识库可视化
+
+![knowledge board](docs/assets/knowledge-board.png)
+
+知识库看板通过 Rust 后端连接 `127.0.0.1` 上的 PAISHU 向量知识服务。API Token 和 PostgreSQL 凭据不会发送到前端；禁用知识只会停止检索，不会删除文档、向量、修订记录或审计历史。
 
 ### 数据来源
 
@@ -75,16 +83,18 @@
 
 ### 安装与使用
 
-从 [Releases](https://github.com/PAISHU-AI/codex-PAISHU-source/releases) 下载安装包，或从源码运行。
+使用源文件夹内生成的 DMG 安装包，或从源码运行。
 
 桌面快捷键：
 
 - Windows: `Ctrl+Alt+U`
 - macOS: `Command+U`
 
-托盘菜单：
+顶部菜单栏：
 
-- 显示 / 隐藏
+- 显示主窗口
+- 最小化到 Dock
+- 隐藏到顶部菜单栏
 - 切换窗口置顶
 - 退出
 
@@ -163,7 +173,7 @@ src-tauri/target/release/bundle/
 
 ### 贡献者与来源
 
-- PAISHU-AI：PAISHU 版本维护、重命名、打包与发布。
+- 光核超级服务：光核超级服务版本维护、重命名、打包与发布。
 - [shanggqm/codexU](https://github.com/shanggqm/codexU)：本项目源码基于该仓库获取后二次加工。
 
 ### 许可证
@@ -174,7 +184,7 @@ MIT License. See [LICENSE](LICENSE).
 
 ## English
 
-`codex-PAISHU` is an open-source cross-platform desktop dashboard for local Codex / ChatGPT Codex usage. It shows quota windows, token usage, estimated API value, login status, local Skills metadata, and runtime diagnostics.
+`光核超级服务` is an open-source cross-platform desktop dashboard for local Codex / ChatGPT Codex usage. It shows quota windows, token usage, estimated API value, login status, local vector knowledge, Skills metadata, and runtime diagnostics.
 
 It supports both official native login and third-party API / API relay mode. You can switch modes from the settings drawer, let the app update Codex `config.toml` and `auth.json`, and restore the first-run default configuration with managed backups.
 
@@ -182,12 +192,14 @@ It supports both official native login and third-party API / API relay mode. You
 
 ### Highlights
 
-- **Quota windows**: Monitor 5-hour and 7-day rolling quota windows.
+- **Quota windows**: Monitor the official 7-day rolling quota window.
 - **Token value estimate**: Estimate today, 7-day, lifetime, and membership-cycle value using official API pricing assumptions.
 - **Official / third-party API one-click switch**: Switch between `Official Native` and `API Relay` from the settings drawer.
 - **API relay settings**: Configure endpoint, API key, model, reasoning effort, and speed strategy.
 - **Managed config backups**: Automatically save the first-run default config; manually save, restore, and delete non-default backups.
 - **Skills board**: Browse local Codex Skills, search, translate descriptions, enable / disable / archive user skills.
+- **Knowledge visualization**: Monitor the local PAISHU PostgreSQL + pgvector service, including capacity, inventory, chunks, read latency, success/failure counts, reversible knowledge enable/disable controls, real-content overviews, and temporary Chinese translation.
+- **Dock and menu bar**: On macOS, minimize to Dock or hide to the top menu bar while the idle/unfocused window remains fully opaque.
 - **Environment diagnostics**: Check Codex CLI, data directory, SQLite state, app-server, and session log parsing.
 - **Local-first boundary**: SQLite, JSONL, and Codex config operations stay in the Rust desktop layer.
 - **Cross-platform desktop**: Tauri 2 + React + Rust for Windows and macOS.
@@ -200,15 +212,15 @@ The settings drawer can switch Codex from official native mode to API relay mode
 
 When saved, the app synchronizes:
 
-- `model_provider = "paishu_relay"`
-- `[model_providers.paishu_relay]`
+- `model_provider = "paishu_agi_relay"`
+- `[model_providers.paishu_agi_relay]`
 - `base_url`
 - `wire_api = "responses"`
 - `preferred_auth_method = "apikey"`
 - model, reasoning effort, and speed strategy
 - `auth.json` fields including `auth_mode` and `OPENAI_API_KEY`
 
-When switching back to official native mode, it removes the PAISHU relay provider shape and restores ChatGPT auth defaults while preserving unrelated config sections such as project paths, MCP servers, and trust records.
+When switching back to official native mode, it removes the 光核超级服务 relay provider shape and restores ChatGPT auth defaults while preserving unrelated config sections such as project paths, MCP servers, and trust records.
 
 ### Managed backups
 
@@ -225,6 +237,12 @@ Before restore, the app creates timestamped backups of the current files, so you
 ![skills board](docs/assets/skills-board.png)
 
 The Skills board reads bounded metadata only. It does not send full `SKILL.md` bodies to the frontend. System skills, plugin-cache skills, and protected skills are read-only; user skills can be enabled, disabled, or archived.
+
+### Knowledge visualization
+
+![knowledge board](docs/assets/knowledge-board.png)
+
+The Knowledge board connects through the Rust backend to the localhost PAISHU vector service. API and database credentials never reach React; disabling a document only removes it from retrieval and does not delete vectors, revisions, or audit history.
 
 ### Data sources
 
@@ -243,7 +261,7 @@ The Skills board reads bounded metadata only. It does not send full `SKILL.md` b
 
 ### Install and run
 
-Download installers from [Releases](https://github.com/PAISHU-AI/codex-PAISHU-source/releases), or run from source.
+Use the DMG installer generated in the source folder, or run from source.
 
 Desktop shortcuts:
 
@@ -331,7 +349,7 @@ src-tauri/target/release/bundle/
 
 ### Contributors and source
 
-- PAISHU-AI: PAISHU version maintenance, rebranding, packaging, and publishing.
+- 光核超级服务: 光核超级服务 version maintenance, rebranding, packaging, and publishing.
 - [shanggqm/codexU](https://github.com/shanggqm/codexU): this source distribution is derived from that repository and further adapted.
 
 ### License

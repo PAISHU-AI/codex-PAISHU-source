@@ -1,7 +1,8 @@
 use crate::{
     error::{AppError, AppResult},
-    models::{AppSettings, DetectionPaths},
+    models::{AppSettings, AuthStatus, DetectionPaths},
 };
+use serde_json::Value;
 use std::{
     env,
     path::{Path, PathBuf},
@@ -11,7 +12,7 @@ pub fn app_log_dir() -> AppResult<PathBuf> {
     let base = dirs::data_local_dir()
         .or_else(dirs::data_dir)
         .ok_or_else(|| AppError::Config("无法解析本地数据目录".to_string()))?;
-    Ok(base.join("codex-paishu").join("logs"))
+    Ok(base.join("paishu-agi").join("logs"))
 }
 
 pub fn detect_paths(settings: &AppSettings) -> DetectionPaths {
@@ -56,6 +57,7 @@ pub fn detect_codex_binary(settings: &AppSettings) -> Option<PathBuf> {
     if cfg!(target_os = "macos") {
         candidates.extend([
             PathBuf::from("/Applications/Codex.app/Contents/Resources/codex"),
+            PathBuf::from("/Applications/ChatGPT.app/Contents/Resources/codex"),
             PathBuf::from("/opt/homebrew/bin/codex"),
             PathBuf::from("/usr/local/bin/codex"),
             PathBuf::from("/usr/bin/codex"),
@@ -84,6 +86,34 @@ pub fn detect_codex_binary(settings: &AppSettings) -> Option<PathBuf> {
     }
 
     None
+}
+
+pub fn read_codex_auth_status(codex_dir: Option<&Path>) -> AuthStatus {
+    let Some(codex_dir) = codex_dir else {
+        return AuthStatus::default();
+    };
+    let Ok(text) = std::fs::read_to_string(codex_dir.join("auth.json")) else {
+        return AuthStatus::default();
+    };
+    let Ok(value) = serde_json::from_str::<Value>(&text) else {
+        return AuthStatus::default();
+    };
+    auth_status_from_value(&value)
+}
+
+fn auth_status_from_value(value: &Value) -> AuthStatus {
+    let mode = value
+        .get("auth_mode")
+        .and_then(Value::as_str)
+        .map(str::to_string);
+    let has_chatgpt_tokens = value
+        .pointer("/tokens/access_token")
+        .and_then(Value::as_str)
+        .is_some_and(|token| !token.trim().is_empty());
+    AuthStatus {
+        is_logged_in: mode.as_deref() == Some("chatgpt") && has_chatgpt_tokens,
+        mode,
+    }
 }
 
 fn is_usable_auto_candidate(path: &Path) -> bool {
@@ -142,6 +172,27 @@ mod tests {
         assert!(!is_windowsapps_path(Path::new(
             r"C:\Users\me\.codex\.sandbox-bin\codex.exe"
         )));
+    }
+
+    #[test]
+    fn recognizes_chatgpt_bundled_cli_path() {
+        let path = Path::new("/Applications/ChatGPT.app/Contents/Resources/codex");
+        assert!(path.to_string_lossy().contains("ChatGPT.app"));
+    }
+
+    #[test]
+    fn chatgpt_auth_requires_mode_and_access_token() {
+        let value = serde_json::json!({
+            "auth_mode": "chatgpt",
+            "tokens": { "access_token": "present" }
+        });
+        assert!(auth_status_from_value(&value).is_logged_in);
+
+        let api_key_mode = serde_json::json!({
+            "auth_mode": "apikey",
+            "tokens": { "access_token": "present" }
+        });
+        assert!(!auth_status_from_value(&api_key_mode).is_logged_in);
     }
 
     #[cfg(windows)]
