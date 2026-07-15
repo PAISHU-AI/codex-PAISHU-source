@@ -83,6 +83,13 @@ pub async fn get_knowledge_board() -> AppResult<KnowledgeBoard> {
 }
 
 #[tauri::command]
+pub async fn sync_knowledge_sources() -> AppResult<KnowledgeBoard> {
+    tauri::async_runtime::spawn_blocking(knowledge_board::sync_knowledge_sources)
+        .await
+        .map_err(|err| AppError::Process(format!("后台同步知识库失败: {err}")))?
+}
+
+#[tauri::command]
 pub async fn get_knowledge_overview(document_id: String) -> AppResult<KnowledgeOverview> {
     tauri::async_runtime::spawn_blocking(move || {
         knowledge_board::get_knowledge_overview(&document_id)

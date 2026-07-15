@@ -34,6 +34,10 @@ const enabledBoard: KnowledgeBoardData = {
 
 vi.mock("./api", () => ({
   getKnowledgeBoard: vi.fn(async () => enabledBoard),
+  syncKnowledgeSources: vi.fn(async () => ({
+    ...enabledBoard,
+    messages: ["已同步本机知识库源：0 个新增/更新，49 个跳过。"],
+  })),
   getKnowledgeOverview: vi.fn(async () => ({
     documentId: "d50f8262-c19d-46cd-a001-5d634b692807",
     title: "客户素材需求清单",
@@ -63,6 +67,8 @@ describe("KnowledgeBoard", () => {
     expect(screen.getByText("128")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /客户素材需求清单/ })).toBeInTheDocument();
+    expect(knowledgeApi.syncKnowledgeSources).toHaveBeenCalled();
+    expect(screen.getByText("已同步本机知识库源：0 个新增/更新，49 个跳过。")).toBeInTheDocument();
   });
 
   it("disables an enabled knowledge document", async () => {
@@ -75,6 +81,8 @@ describe("KnowledgeBoard", () => {
       "d50f8262-c19d-46cd-a001-5d634b692807",
       false,
     );
+    expect(await screen.findByText("没有匹配的知识。")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /已禁用/ }));
     expect(await screen.findByLabelText("启用 客户素材需求清单")).toBeInTheDocument();
   });
 

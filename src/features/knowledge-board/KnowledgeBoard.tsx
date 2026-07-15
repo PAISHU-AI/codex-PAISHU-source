@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  getKnowledgeBoard,
   getKnowledgeOverview,
   setKnowledgeEnabled,
+  syncKnowledgeSources,
   translateKnowledgeOverviewToChinese,
 } from "./api";
 import type { KnowledgeBoardData, KnowledgeDocumentSummary, KnowledgeOverview } from "./types";
@@ -29,7 +29,7 @@ export function KnowledgeBoard() {
   const [board, setBoard] = useState<KnowledgeBoardData | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<KnowledgeFilter>("all");
+  const [filter, setFilter] = useState<KnowledgeFilter>("enabled");
   const [isLoading, setIsLoading] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export function KnowledgeBoard() {
     setIsLoading(true);
     setError(null);
     try {
-      const next = await getKnowledgeBoard();
+      const next = await syncKnowledgeSources();
       setBoard(next);
       setSelectedId((current) => current ?? next.documents[0]?.id ?? null);
     } catch (err) {

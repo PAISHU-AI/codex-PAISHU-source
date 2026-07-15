@@ -2,6 +2,9 @@
 
 ## 2026-07-15
 
+- Added Knowledge Board auto-sync. Refresh now calls a native `sync_knowledge_sources` command that discovers governed `knowledge-retrieval` packages, ingests them into `paishu-global-v2` through the local `paishu-kb` CLI, and reports per-package failures without hiding already indexed knowledge.
+- Tightened Knowledge Board auto-sync to honor package `metadata.yml`: draft/deprecated/archived/quarantined packages and `ingestion.enabled: false` are skipped, while `ingestion.mode: kb_only` syncs only the clean `kb/` layer.
+- Set the Knowledge Board's default inventory filter to enabled documents so disabled legacy projections do not dominate the first view.
 - Set `PAISHU-AI/codex-PAISHU-source` as the canonical public publication target for the current source and verified root-level macOS DMG; ignored build caches, runtime data, credentials, and login state remain outside Git.
 - Renamed the previous user-visible product name to `光核超级服务` across Tauri bundle metadata, window/header/browser titles, runtime client metadata, README, and packaging docs while retaining `paishu-agi`, `paishu_agi`, and `com.paishu.agi` as compatibility identifiers. Replaced the desktop icon and in-app logo from the user-provided 1254×1254 PNG sources and regenerated every platform icon derivative.
 - Replaced the complete visual asset set in the user-specified order: desktop platform icon source, quota/dashboard screenshot, knowledge screenshot, Skills screenshot, API relay screenshot, and the in-app header logo. Platform icons are regenerated from `src-tauri/icons/source-icon.png`.
