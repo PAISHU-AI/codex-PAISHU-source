@@ -10,6 +10,14 @@ export function syncKnowledgeSources(): Promise<KnowledgeBoardData> {
   return invoke<KnowledgeBoardData>("sync_knowledge_sources");
 }
 
+export function openKnowledgeSource(documentId: string): Promise<string> {
+  return invoke<string>("open_knowledge_source", { documentId });
+}
+
+export function deleteKnowledge(documentId: string): Promise<KnowledgeBoardData> {
+  return invoke<KnowledgeBoardData>("delete_knowledge", { documentId });
+}
+
 export function getKnowledgeOverview(documentId: string): Promise<KnowledgeOverview> {
   return invoke<KnowledgeOverview>("get_knowledge_overview", { documentId });
 }

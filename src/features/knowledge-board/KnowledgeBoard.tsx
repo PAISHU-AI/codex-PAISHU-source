@@ -5,17 +5,22 @@ import {
   Clock3,
   Database,
   FileText,
+  FolderOpen,
   Languages,
   Layers3,
   LoaderCircle,
   Power,
   RefreshCw,
   Search,
+  Trash2,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  deleteKnowledge,
+  getKnowledgeBoard,
   getKnowledgeOverview,
+  openKnowledgeSource,
   setKnowledgeEnabled,
   syncKnowledgeSources,
   translateKnowledgeOverviewToChinese,
@@ -24,6 +29,8 @@ import type { KnowledgeBoardData, KnowledgeDocumentSummary, KnowledgeOverview } 
 import "./KnowledgeBoard.css";
 
 type KnowledgeFilter = "all" | "enabled" | "disabled";
+
+export const KNOWLEDGE_STATUS_REFRESH_INTERVAL_MS = 200_000;
 
 export function KnowledgeBoard() {
   const [board, setBoard] = useState<KnowledgeBoardData | null>(null);
@@ -40,17 +47,21 @@ export function KnowledgeBoard() {
   const [translatedOverview, setTranslatedOverview] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationError, setTranslationError] = useState<string | null>(null);
+  const refreshInFlight = useRef(false);
 
-  const loadBoard = useCallback(async () => {
+  const loadBoard = useCallback(async (mode: "sync" | "status" = "sync") => {
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
     setIsLoading(true);
     setError(null);
     try {
-      const next = await syncKnowledgeSources();
+      const next = mode === "sync" ? await syncKnowledgeSources() : await getKnowledgeBoard();
       setBoard(next);
       setSelectedId((current) => current ?? next.documents[0]?.id ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
+      refreshInFlight.current = false;
       setIsLoading(false);
     }
   }, []);
@@ -59,16 +70,30 @@ export function KnowledgeBoard() {
     void loadBoard();
   }, [loadBoard]);
 
+  useEffect(() => {
+    const id = window.setInterval(
+      () => void loadBoard("status"),
+      KNOWLEDGE_STATUS_REFRESH_INTERVAL_MS,
+    );
+    return () => window.clearInterval(id);
+  }, [loadBoard]);
+
   const documents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return (board?.documents ?? []).filter((document) => {
-      if (filter === "enabled" && !document.enabled) return false;
-      if (filter === "disabled" && document.enabled) return false;
-      if (!normalizedQuery) return true;
-      return `${document.title} ${document.owner} ${document.sourceUri}`
-        .toLowerCase()
-        .includes(normalizedQuery);
-    });
+    return (board?.documents ?? [])
+      .filter((document) => {
+        if (filter === "enabled" && !document.enabled) return false;
+        if (filter === "disabled" && document.enabled) return false;
+        if (!normalizedQuery) return true;
+        return `${document.title} ${document.packageName} ${document.owner} ${document.sourceUri}`
+          .toLowerCase()
+          .includes(normalizedQuery);
+      })
+      .sort(
+        (left, right) =>
+          left.packageName.localeCompare(right.packageName, "zh-CN") ||
+          left.title.localeCompare(right.title, "zh-CN"),
+      );
   }, [board, filter, query]);
 
   const selectedDocument =
@@ -140,6 +165,39 @@ export function KnowledgeBoard() {
     }
   }
 
+  async function revealKnowledgeSource(document: KnowledgeDocumentSummary) {
+    setIsBusy(true);
+    setError(null);
+    try {
+      await openKnowledgeSource(document.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function removeKnowledge(document: KnowledgeDocumentSummary) {
+    if (
+      !window.confirm(
+        `确认删除知识“${document.title}”？源文件将移至知识回收站，向量检索会立即停用。`,
+      )
+    ) {
+      return;
+    }
+    setIsBusy(true);
+    setError(null);
+    try {
+      const next = await deleteKnowledge(document.id);
+      setBoard(next);
+      setSelectedId(next.documents[0]?.id ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
   return (
     <section className="panel knowledge-board-panel">
       <div className="section-heading knowledge-board-heading">
@@ -157,6 +215,14 @@ export function KnowledgeBoard() {
           >
             <span />
             {board?.serviceStatus === "ok" ? "服务正常" : "等待连接"}
+          </span>
+          <span
+            className={`knowledge-auto-monitor ${isLoading ? "refreshing" : ""}`}
+            aria-label="知识库自动监测，每 200 秒刷新一次状态"
+            title="每 200 秒自动读取知识库状态，不会重复写入知识库"
+          >
+            <RefreshCw size={12} className={isLoading ? "spin" : undefined} />
+            {isLoading ? "监测中 · 200 秒" : "自动监测 · 200 秒"}
           </span>
           <button
             className="icon-button"
@@ -256,7 +322,9 @@ export function KnowledgeBoard() {
                   selected={document.id === selectedDocument?.id}
                   disabled={isBusy}
                   onSelect={() => setSelectedId(document.id)}
+                  onOpen={() => void revealKnowledgeSource(document)}
                   onToggle={() => void toggleKnowledge(document)}
+                  onDelete={() => void removeKnowledge(document)}
                 />
               ))
             )}
@@ -345,13 +413,17 @@ function KnowledgeListItem({
   selected,
   disabled,
   onSelect,
+  onOpen,
   onToggle,
+  onDelete,
 }: {
   document: KnowledgeDocumentSummary;
   selected: boolean;
   disabled: boolean;
   onSelect: () => void;
+  onOpen: () => void;
   onToggle: () => void;
+  onDelete: () => void;
 }) {
   return (
     <div
@@ -361,20 +433,43 @@ function KnowledgeListItem({
     >
       <button className="knowledge-item-main" type="button" onClick={onSelect}>
         <span>{document.title}</span>
-        <small>
-          {document.chunkCount} 分块 · {formatInteger(document.approximateTokens)} tokens
+        <small title={document.packageName}>
+          {document.packageName || "未分类知识"} · {document.chunkCount} 分块 ·{" "}
+          {formatInteger(document.approximateTokens)} tokens
         </small>
       </button>
-      <button
-        className={`knowledge-toggle ${document.enabled ? "state-enabled" : "state-disabled"}`}
-        type="button"
-        disabled={disabled}
-        aria-label={`${document.enabled ? "禁用" : "启用"} ${document.title}`}
-        title={document.enabled ? "禁用知识" : "启用知识"}
-        onClick={onToggle}
-      >
-        {document.enabled ? <Power size={14} /> : <CircleSlash2 size={14} />}
-      </button>
+      <div className="knowledge-item-actions">
+        <button
+          className="knowledge-item-action"
+          type="button"
+          disabled={disabled}
+          aria-label={`定位 ${document.title}`}
+          title="在文件管理器中定位源文件"
+          onClick={onOpen}
+        >
+          <FolderOpen size={14} />
+        </button>
+        <button
+          className={`knowledge-item-action ${document.enabled ? "state-enabled" : "state-disabled"}`}
+          type="button"
+          disabled={disabled}
+          aria-label={`${document.enabled ? "禁用" : "启用"} ${document.title}`}
+          title={document.enabled ? "禁用知识" : "启用知识"}
+          onClick={onToggle}
+        >
+          {document.enabled ? <Power size={14} /> : <CircleSlash2 size={14} />}
+        </button>
+        <button
+          className="knowledge-item-action danger"
+          type="button"
+          disabled={disabled}
+          aria-label={`删除 ${document.title}`}
+          title="删除知识"
+          onClick={onDelete}
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
     </div>
   );
 }

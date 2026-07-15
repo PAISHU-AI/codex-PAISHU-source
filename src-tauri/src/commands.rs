@@ -111,6 +111,22 @@ pub async fn set_knowledge_enabled(
 }
 
 #[tauri::command]
+pub async fn open_knowledge_source(document_id: String) -> AppResult<String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        knowledge_board::open_knowledge_source(&document_id)
+    })
+    .await
+    .map_err(|err| AppError::Process(format!("后台定位知识源文件失败: {err}")))?
+}
+
+#[tauri::command]
+pub async fn delete_knowledge(document_id: String) -> AppResult<KnowledgeBoard> {
+    tauri::async_runtime::spawn_blocking(move || knowledge_board::delete_knowledge(&document_id))
+        .await
+        .map_err(|err| AppError::Process(format!("后台删除知识失败: {err}")))?
+}
+
+#[tauri::command]
 pub async fn get_app_settings() -> AppResult<AppSettings> {
     read_settings()
 }

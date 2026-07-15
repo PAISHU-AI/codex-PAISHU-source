@@ -14,11 +14,12 @@ mod skills_board;
 mod snapshot;
 
 use commands::{
-    archive_skill, create_codex_config_backup, delete_codex_config_backup, disable_skill,
-    enable_skill, get_app_settings, get_detection_paths, get_knowledge_board,
+    archive_skill, create_codex_config_backup, delete_codex_config_backup, delete_knowledge,
+    disable_skill, enable_skill, get_app_settings, get_detection_paths, get_knowledge_board,
     get_knowledge_overview, get_skill_board, get_usage_snapshot, list_codex_config_backups,
-    open_log_folder, open_skill_folder, refresh_task_board, restore_codex_config_backup,
-    save_app_settings, set_always_on_top, set_knowledge_enabled, sync_knowledge_sources,
+    open_knowledge_source, open_log_folder, open_skill_folder, refresh_task_board,
+    restore_codex_config_backup, save_app_settings, set_always_on_top, set_knowledge_enabled,
+    sync_knowledge_sources,
 };
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
@@ -58,7 +59,9 @@ pub fn run() {
             sync_knowledge_sources,
             get_knowledge_board,
             get_knowledge_overview,
-            set_knowledge_enabled
+            set_knowledge_enabled,
+            open_knowledge_source,
+            delete_knowledge
         ])
         .on_window_event(|window, event| {
             if window.label() != "main" {

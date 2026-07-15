@@ -38,26 +38,29 @@ Important models:
 
 ## IPC Commands
 
-| Command                       | Purpose                                                                                            |
-| ----------------------------- | -------------------------------------------------------------------------------------------------- |
-| `get_usage_snapshot`          | Full quota, local usage, task board, diagnostics, messages                                         |
-| `refresh_task_board`          | Lightweight task board refresh                                                                     |
-| `get_app_settings`            | Read persisted app settings                                                                        |
-| `save_app_settings`           | Persist settings, sync Codex config, clamp refresh interval to 200-300 seconds                     |
-| `list_codex_config_backups`   | Return metadata for managed Codex config/auth backup snapshots                                     |
-| `create_codex_config_backup`  | Save the current Codex `config.toml` and `auth.json` snapshot, returning the refreshed backup list |
-| `restore_codex_config_backup` | Restore a selected managed snapshot after timestamp-backing up the current Codex files             |
-| `delete_codex_config_backup`  | Delete a selected non-default managed backup directory and return the refreshed backup list        |
-| `get_detection_paths`         | Return detected Codex executable, data dir, DB, and log dir                                        |
-| `open_log_folder`             | Open app log folder using OS shell                                                                 |
-| `get_skill_board`             | Return local Codex Skills metadata for the isolated Skills board                                   |
-| `disable_skill`               | Move an allowed user skill to the local `skills-disabled` folder                                   |
-| `enable_skill`                | Move a disabled skill from local `skills-disabled` back to `skills`                                |
-| `archive_skill`               | Move an allowed user skill to the local `skills-trash` folder                                      |
-| `open_skill_folder`           | Open a resolved skill folder using the OS file manager                                             |
-| `get_knowledge_board`         | Return sanitized vector knowledge metrics and governed document inventory                          |
-| `get_knowledge_overview`      | Return a bounded overview from one validated document's active persisted revision                  |
-| `set_knowledge_enabled`       | Enable or disable one validated knowledge document through the localhost service                   |
+| Command                       | Purpose                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| `get_usage_snapshot`          | Full quota, local usage, task board, diagnostics, messages                                          |
+| `refresh_task_board`          | Lightweight task board refresh                                                                      |
+| `get_app_settings`            | Read persisted app settings                                                                         |
+| `save_app_settings`           | Persist settings, sync Codex config, clamp refresh interval to 200-300 seconds                      |
+| `list_codex_config_backups`   | Return metadata for managed Codex config/auth backup snapshots                                      |
+| `create_codex_config_backup`  | Save the current Codex `config.toml` and `auth.json` snapshot, returning the refreshed backup list  |
+| `restore_codex_config_backup` | Restore a selected managed snapshot after timestamp-backing up the current Codex files              |
+| `delete_codex_config_backup`  | Delete a selected non-default managed backup directory and return the refreshed backup list         |
+| `get_detection_paths`         | Return detected Codex executable, data dir, DB, and log dir                                         |
+| `open_log_folder`             | Open app log folder using OS shell                                                                  |
+| `get_skill_board`             | Return local Codex Skills metadata for the isolated Skills board                                    |
+| `disable_skill`               | Move an allowed user skill to the local `skills-disabled` folder                                    |
+| `enable_skill`                | Move a disabled skill from local `skills-disabled` back to `skills`                                 |
+| `archive_skill`               | Move an allowed user skill to the local `skills-trash` folder                                       |
+| `open_skill_folder`           | Open a resolved skill folder using the OS file manager                                              |
+| `get_knowledge_board`         | Return sanitized vector knowledge metrics and governed document inventory                           |
+| `sync_knowledge_sources`      | Ingest eligible governed local knowledge packages before returning the dashboard                    |
+| `get_knowledge_overview`      | Return a bounded overview from one validated document's active persisted revision                   |
+| `set_knowledge_enabled`       | Enable or disable one validated knowledge document through the localhost service                    |
+| `open_knowledge_source`       | Resolve a validated document again and reveal its exact governed source file in the OS file manager |
+| `delete_knowledge`            | Archive a governed source file, persist a tombstone, and disable vector retrieval                   |
 
 ## Data Semantics
 
@@ -90,8 +93,12 @@ Important models:
 - Skills board metadata reads only bounded `SKILL.md` header/frontmatter content for `name` and `description`; full skill bodies are not sent to the frontend.
 - Only user skills under the local Codex `~/.codex/skills` directory are disable/delete manageable on macOS. Disabled skills under `~/.codex/skills-disabled` are enable manageable. System skills, plugin cache skills, and `yonghu-preferences` are read-only. Delete is implemented as archive to `~/.codex/skills-trash`, not permanent removal.
 - Knowledge board IPC returns `KnowledgeBoard` / `KnowledgeDocumentSummary` from `src-tauri/src/knowledge_board.rs`. Rust reads the service environment from `~/Library/Application Support/PAISHU/knowledge-service/config/.env`, enforces a loopback host, keeps the API token native-side, and proxies only bounded dashboard and enable-state operations.
-- `sync_knowledge_sources` runs before the React knowledge board refreshes. Rust detects governed source roots from `PAISHU_KNOWLEDGE_RETRIEVAL_DIR`, `PAISHU_KNOWLEDGE_RETRIEVAL_DIRS`, the current development `knowledge-retrieval/`, and `~/Desktop/GUANGHE-PAISHU/knowledge-retrieval`, then reads each package `metadata.yml` before ingesting. Packages with `ingestion.enabled: false`, `ingestion.mode: quarantine`, or draft/deprecated/archived status are skipped. Packages with `ingestion.mode: kb_only` ingest only the `kb/` layer into `paishu-global-v2` through the local `paishu-kb` CLI, carrying package `status`, `access_tier`, and `owner` into the ingest command. Individual package failures are returned as dashboard messages instead of blocking the full board.
+- `sync_knowledge_sources` runs before the React knowledge board refreshes. Rust detects governed source roots from `PAISHU_KNOWLEDGE_RETRIEVAL_DIR`, `PAISHU_KNOWLEDGE_RETRIEVAL_DIRS`, the current development `knowledge-retrieval/`, and `~/Desktop/GUANGHE-PAISHU/knowledge-retrieval`, then reads each package `metadata.yml` before ingesting. Packages with `ingestion.enabled: false`, `ingestion.mode: quarantine`, or draft/deprecated/archived status are skipped. Packages with `ingestion.mode: kb_only` send only UTF-8 text files under `kb/` to the loopback service API, carrying package `status`, `access_tier`, and `owner`. Manifest SHA-256 values skip unchanged files, and external IDs use `<package>/<relative-path>` so same-named files from different packages remain distinct while `sourceUri` remains the exact governed file path. Individual package failures are returned as dashboard messages instead of blocking the full board.
+- The Knowledge Board starts with a full governed source sync and retains that path for the manual refresh button. Its v2.0 automatic monitor calls only `get_knowledge_board` every 200 seconds, uses a frontend single-flight guard to avoid overlap, and never re-ingests sources or changes document enable/delete state.
+- `KnowledgeBoard.chunkCount` reports only active vector chunks. Superseded revision chunks remain in PostgreSQL for audit/history but do not contribute to the visible search-ready chunk count or retrieval index total.
 - `get_knowledge_overview` validates the document UUID and returns `KnowledgeOverview` from service v1.2. The overview is extracted from the active revision, capped at 1,200 characters, and translated only in temporary React display state.
+- `open_knowledge_source` accepts only a validated document UUID. Rust reloads the visible document, resolves local paths and `file:` URIs, rejects sources outside detected `knowledge-retrieval` roots, and asks the OS file manager to select the exact source file.
+- `delete_knowledge` is recoverable deletion, not a database hard-delete. Rust moves an existing governed source file under the app-local `PAISHU/knowledge-service/trash` directory, writes a tombstone, disables the service document, and excludes tombstoned IDs from returned documents and dashboard counts. If disabling fails, the source move and tombstone are rolled back. A confirmation gate remains in React.
 - `databaseBytes` is PostgreSQL `pg_database_size`; `averageReadMs`, `readSuccessCount`, and `readFailureCount` come from knowledge-service audit events. Legacy `knowledge.searched` events count as successful reads, while duration starts with v1.1 `knowledge.read.*` events.
 - Disabling knowledge sets the service-owned `kb_documents.enabled` flag. It excludes the document from hybrid retrieval without deleting vectors, revisions, source metadata, or audit history; re-enabling is reversible.
 

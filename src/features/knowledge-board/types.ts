@@ -9,6 +9,7 @@ export interface KnowledgeDocumentSummary {
   chunkCount: number;
   approximateTokens: number;
   updatedAt: string;
+  packageName: string;
 }
 
 export interface KnowledgeBoardData {

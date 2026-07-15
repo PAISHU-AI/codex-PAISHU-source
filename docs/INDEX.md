@@ -23,6 +23,7 @@
 - `docs/maintenance/development-log.md` - reusable development decisions and verification notes.
 - `docs/maintenance/debug-reports/2026-07-03-refresh-settings-membership-cycle.md` - refresh speed, settings save, and membership-cycle value bugfix.
 - `docs/maintenance/debug-reports/2026-07-13-chatgpt-bundled-codex-runtime.md` - ChatGPT-bundled Codex CLI discovery, app-server schema, login-state fallback, and 7-day quota-window field migration.
+- `docs/maintenance/debug-reports/2026-07-15-knowledge-monitoring-install-drift.md` - Installed-app drift behind the empty Knowledge Board and the source reveal/delete repair.
 
 ## Public Assets
 
